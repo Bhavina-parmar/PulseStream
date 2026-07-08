@@ -1,0 +1,39 @@
+name: PulseStream CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: postgresql://pulse_user:pulse_pass@localhost:5432/pulsestream
+      SECRET_KEY: test-secret-key-for-ci
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      REDIS_URL: redis://localhost:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        working-directory: backend/apps/api-gateway
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: backend/apps/api-gateway
+        run: pytest tests/ -v
