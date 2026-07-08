@@ -7,18 +7,42 @@ from controllers.auth_controller import router as auth_router
 from middlewares.rate_limiter import rate_limit_middleware
 from controllers.event_controller import router as event_router
 from controllers.analytics_controller import router as analytics_router
+from controllers.websocket_controller import router as websocket_router
+from prometheus_fastapi_instrumentator import Instrumentator
+
 
 logger = logging.getLogger(__name__)
 
-app=FastAPI()
+app=FastAPI(
+    title="PulseStream API Gateway",
+    description=("**Event-driven high-throughput API Gateway.**\n\n"
+                "This service provides interfaces for user account generation, ingestion of "
+                "system telemetry analytics, live data monitoring over streaming WebSockets, "
+                "and granular system dependency checking. "
+                ),
+                version="1.0.0",
+                docs_url="/docs",
+                redoc_url="/redoc",
+                contact={
+                    "name":"PulseStream Platform Engineers",
+                    "email" : "dev-support@pulsestream.io",
+                },
+                license_info={
+                    "name":"Apache 2.0",
+                    "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+                },
+            )
 
+Instrumentator().instrument(app).expose(app)
 app.middleware("http")(rate_limit_middleware)
+
 
 app.include_router(health_router)
 app.include_router(user_router)
 app.include_router(auth_router)
-
+app.include_router(event_router)
 app.include_router(analytics_router)
+app.include_router(websocket_router)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -41,4 +65,3 @@ async def generic_exception_handler(request: Request, exc: Exception):
         }
     )
 
-app.include_router(event_router)

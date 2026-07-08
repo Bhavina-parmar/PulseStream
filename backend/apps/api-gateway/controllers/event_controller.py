@@ -5,9 +5,15 @@ from services import event_service
 from config.database import get_db
 from middlewares.auth import get_current_user
 
-router = APIRouter(prefix="/events",tags=["Events"])
+router = APIRouter(prefix="/events",tags=["Events Execution Engine"])
 
-@router.post("/",status_code=status.HTTP_202_ACCEPTED,response_model=EventResponseDTO)
+@router.post(
+        "/",
+        status_code=status.HTTP_202_ACCEPTED,
+        response_model=EventResponseDTO,
+        summary="Ingest Telemetry Event",
+        description="Validates a system payload schema, persists a PENDING state log directly into the primary database, and broadcasts the event into Kafka asynchronously for background consumption."
+    )
 async def create_event(
     event_in: EventCreateDTO,
     db: Session= Depends(get_db),

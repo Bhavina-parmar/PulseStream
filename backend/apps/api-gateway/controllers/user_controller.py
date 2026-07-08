@@ -8,9 +8,15 @@ from middlewares.auth import get_current_user
 
 router = APIRouter(
     prefix="/users",
-    tags=["users"]
+    tags=["User Profiles Management"]
 )
-@router.post("/",response_model=UserResponseDTO,status_code=status.HTTP_201_CREATED)
+@router.post(
+        "/",
+        response_model=UserResponseDTO,
+        status_code=status.HTTP_201_CREATED,
+        summary="Register New User Account",
+        description="Validates uniqueness of credentials, hashes plain-text passwords securely using bcrypt, and provisions a brand new user profile record in the database."
+    )
 def create_user(
     user_data:UserCreateDTO,
     db:Session=Depends(get_db)
@@ -24,7 +30,12 @@ def create_user(
             detail=str(e)
         )
     
-@router.get("/{user_id}",response_model=UserResponseDTO)
+@router.get(
+        "/{user_id}",
+        response_model=UserResponseDTO,
+        summary="Retrieve Authenticated User Profile",
+        description="Extracts credentials out of the incoming bearer token context and echoes back the active verified user object profile details. "
+        )
 def read_user(user_id:int,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
     user=get_user(db=db,user_id=user_id)
     if not user:

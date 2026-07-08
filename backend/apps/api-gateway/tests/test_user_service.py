@@ -36,3 +36,35 @@ def test_register_user_duplicate_email(mock_get_user)->None:
         register_user(db=mock_db,email=user_in.email,plain_password=user_in.password)
 
     mock_get_user.assert_called_once_with(mock_db,user_email=user_in.email)
+
+
+@patch("services.user_service.hash_password")
+@patch("services.user_service.create_user")
+@patch("services.user_service.get_user_by_email")
+def test_register_user_hashes_password(mock_get_user, mock_create_user, mock_hash):
+    mock_db = MagicMock()
+    mock_get_user.return_value = None
+    mock_hash.return_value = "encrypted_mock_hash_string"
+    fake_user = User(id=3, email="secure@example.com", hashed_password="encrypted_mock_hash_string")
+    mock_create_user.return_value = fake_user
+
+    result = register_user(db=mock_db, email="secure@example.com", plain_password="MyPlaintextPassword123!")
+
+    mock_hash.assert_called_once_with("MyPlaintextPassword123!")
+    assert result.hashed_password == "encrypted_mock_hash_string"
+    assert result.hashed_password != "MyPlaintextPassword123!"
+
+
+@patch("services.user_service.hash_password")
+@patch("services.user_service.create_user")
+@patch("services.user_service.get_user_by_email")
+def test_register_user_returns_correct_email(mock_get_user, mock_create_user, mock_hash):
+    mock_db = MagicMock()
+    mock_get_user.return_value = None
+    mock_hash.return_value = "any_hash"
+    fake_user = User(id=4, email="identity-check@example.com", hashed_password="any_hash")
+    mock_create_user.return_value = fake_user
+
+    result = register_user(db=mock_db, email="identity-check@example.com", plain_password="Password1!")
+
+    assert result.email == "identity-check@example.com"

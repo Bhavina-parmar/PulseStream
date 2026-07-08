@@ -7,9 +7,14 @@ from repositories.user_repository import get_user_by_email
 from config.database import get_db
 from middlewares.auth import create_access_token
 
-router = APIRouter(prefix="/auth",tags=["Authentication"])
+router = APIRouter(prefix="/auth",tags=["Identity & Access Management"])
 
-@router.post("/login",response_model=TokenResponseDTO)
+@router.post(
+        "/login",
+        response_model=TokenResponseDTO,
+        summary="Generate OAuth2 Access Token",
+        description="Verifies plaintext from parameters against securely recorded password hashes. Returns a signed JWT token string upon successful credential verification."
+        )
 def login(payload:LoginDTO,db:Session=Depends(get_db)):
     user=get_user_by_email(db,user_email=payload.email)
     if not user:
