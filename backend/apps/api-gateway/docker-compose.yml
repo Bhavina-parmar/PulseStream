@@ -75,4 +75,28 @@ services:
       - kafka
     networks:
       - app-network
+    
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: app_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: app_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
 
