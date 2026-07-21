@@ -8,7 +8,6 @@ def test_login_user_not_found():
     with patch("controllers.auth_controller.get_user_by_email") as mock:
         mock.return_value = None
         response = client.post("/auth/login",json={"email": "x@x.com","password":"Test123!"})
-        print(response.json())
         assert response.status_code == 401
         assert response.json()["message"]=="Invalid email or password"
 
