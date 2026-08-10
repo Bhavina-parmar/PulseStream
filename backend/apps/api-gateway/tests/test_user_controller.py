@@ -13,7 +13,7 @@ def test_create_user_success(mock_register):
     mock_register.return_value = fake_user
 
     payload = {"email":"newuser@example.com","password":"Secure123!"}
-    response = client.post("/users",json=payload)
+    response = client.post("/v1/users",json=payload)
 
     assert response.status_code== 201
     assert response.json()["email"] == "newuser@example.com"
@@ -24,7 +24,7 @@ def test_create_user_duplicate_email(mock_register):
     mock_register.side_effect = ValueError("Email already registered")
     
     payload = {"email": "duplicate@example.com","password":"Secure123!"}
-    response = client.post("/users",json=payload)
+    response = client.post("/v1/users",json=payload)
 
     assert response.status_code == 400
     assert response.json()["status"] == "error"
@@ -36,7 +36,7 @@ def test_create_user_invalid_password(mock_register):
     mock_register.side_effect = ValueError("Password too short")
 
     payload = {"email":"user@example.com","password":"Valid123!"}
-    response = client.post("/users/",json=payload)
+    response = client.post("/v1/users/",json=payload)
 
     assert response.status_code == 400
     assert response.json()["status"] == "error"
@@ -51,7 +51,7 @@ def test_get_user_success(mock_get_user):
     mock_get_user.return_value = fake_user
 
     try:
-        response = client.get("/users/42")
+        response = client.get("/v1/users/42")
         assert response.status_code == 200
         assert response.json()["email"] == "activeuser@example.com"
         #mock_get_user.assert_called_once_with(db=pytest.any_str or MagicMock(), user_id=42)
@@ -67,7 +67,7 @@ def test_get_user_not_found(mock_get_user):
     mock_get_user.return_value =None
 
     try:
-        response = client.get("/users/90")
+        response = client.get("/v1/users/90")
         assert response.status_code == 404
         assert response.json()["status"] == "error"
         assert response.json()["message"] == "User not found"

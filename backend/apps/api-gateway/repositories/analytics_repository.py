@@ -8,16 +8,17 @@ KNOWN_EVENT_TYPES=[
     "PURCHASE"
 ]
 
-def increment_counter(event_type: str)->int:
+async def increment_counter(event_type: str)->int:
     key=f"analytics:{event_type}"
-    return redis_client.incr(key)
+    return await redis_client.incr(key)
 
-def get_counter(event_type:str)->int:
+async def get_counter(event_type:str)->int:
     key=f"analytics:{event_type}"
-    value = redis_client.get(key)
-    if value is None:
-        return 0
+    value = await redis_client.get(key)
     return int(value) if value else 0
 
-def get_all_counters()->dict:
-    return {event_type:get_counter(event_type) for event_type in KNOWN_EVENT_TYPES}
+async def get_all_counters()->dict:
+    results = {}
+    for event_type in KNOWN_EVENT_TYPES:
+        results[event_type] = await get_counter(event_type)
+    return results

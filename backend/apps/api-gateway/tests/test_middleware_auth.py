@@ -6,7 +6,8 @@ from middlewares.auth import (
     hash_password,
     verify_password,
     create_access_token,
-    get_current_user
+    get_current_user,
+    require_role
 )
 
 def test_verify_password_correct():
@@ -53,3 +54,29 @@ async def test_get_current_user_invalid_token():
     with pytest.raises(HTTPException) as exc_info:
         await get_current_user(token=garbage_token)
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+
+def test_require_role_success():
+    role_checker = require_role("admin")
+    mock_user_payload = {"sub": "123", "role": "admin"}
+    result = role_checker(current_user=mock_user_payload)
+    assert result == mock_user_payload
+
+def test_require_role_wrong_role():
+    role_checker = require_role("admin")
+    mock_user_payload = {"sub" : "123", "role" : "user"}
+
+    with pytest.raises(HTTPException) as exc_info:
+        role_checker(current_user=mock_user_payload)
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert "Access forbidden" in exc_info.value.detail
+
+def test_require_role_missing_role():
+    role_checker = require_role("admin")
+    mock_user_payload = {"sub": "123"}
+    with pytest.raises(HTTPException) as exc_info:
+        role_checker(current_user=mock_user_payload)
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+    assert "Access forbidden" in exc_info.value.detail
+
+    
+

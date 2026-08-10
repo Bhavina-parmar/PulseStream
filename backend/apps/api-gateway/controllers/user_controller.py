@@ -1,10 +1,12 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from config.database import get_db
 from dto.user_dto import UserCreateDTO, UserResponseDTO
-from services.user_service import register_user,get_user
-from middlewares.auth import get_current_user
+from services.user_service import register_user,get_user, get_all_users
+from middlewares.auth import get_current_user, require_role
+
 
 router = APIRouter(
     prefix="/users",
@@ -29,7 +31,17 @@ def create_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-    
+@router.get(
+        "/",
+        response_model=List[UserResponseDTO],
+        status_code=status.HTTP_200_OK,
+        dependencies=[Depends(require_role("admin"))],
+        summary="List all users(Admin only)",
+        description="Retrieves a list of all registered users. Restricted strictly to users with the 'admin' role."
+)
+def read_all_users(db:Session = Depends(get_db)):
+    return get_all_users(db=db)
+
 @router.get(
         "/{user_id}",
         response_model=UserResponseDTO,
@@ -37,6 +49,13 @@ def create_user(
         description="Extracts credentials out of the incoming bearer token context and echoes back the active verified user object profile details. "
         )
 def read_user(user_id:int,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
+    current_user_id = int(current_user.get("sub"))
+    current_user_role = current_user.get("role")
+    if current_user_id != user_id and current_user_role !="admin":
+        raise HTTPException(
+            status_code = status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: you can only view your own profile"
+        )
     user=get_user(db=db,user_id=user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")

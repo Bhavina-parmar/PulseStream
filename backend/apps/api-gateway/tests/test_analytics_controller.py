@@ -11,7 +11,7 @@ def test_get_all_analytics(mock_get_all):
         "USER_LOGIN" : 15,
         "PURCHASE" : 3
     }
-    response = client.get("/analytics/")
+    response = client.get("/v1/analytics/")
 
     assert response.status_code == 200
     data = response.json()
@@ -22,7 +22,7 @@ def test_get_all_analytics(mock_get_all):
 def test_get_event_analytics_found(mock_get_one):
     mock_get_one.return_value =42
 
-    response = client.get("/analytics/USER_LOGIN")
+    response = client.get("/v1/analytics/USER_LOGIN")
 
     assert response.status_code == 200
     data = response.json()
@@ -34,7 +34,7 @@ def test_get_event_analytics_found(mock_get_one):
 def test_get_event_analytics_zero(mock_get_one):
     mock_get_one.return_value = 0
 
-    response = client.get("/analytics/UNKNOWN_EVENT")
+    response = client.get("/v1/analytics/UNKNOWN_EVENT")
 
     assert response.status_code == 200
     data = response.json()

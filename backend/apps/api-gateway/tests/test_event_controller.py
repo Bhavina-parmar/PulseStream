@@ -32,7 +32,7 @@ def test_create_event_success(mock_create_and_punlish):
     }
 
     try:
-        response = client.post("/events/",json=payload)
+        response = client.post("/v1/events/",json=payload)
 
         assert response.status_code == 202
         data = response.json()
@@ -56,7 +56,7 @@ def test_create_event_unauthorized():
     }
 
     try:
-        response = client.post("/events/", json=payload)
+        response = client.post("/v1/events/", json=payload)
         assert response.status_code == 401
 
     finally:
@@ -65,7 +65,7 @@ def test_create_event_unauthorized():
 def test_create_event_invalid_payload():
     app.dependency_overrides[get_current_user] = lambda:{"sub":"1"}
     try:
-        response = client.post("/events/", json={"event_type":"USER_LOGIN","source":"web-client","payload":{}})
+        response = client.post("/v1/events/", json={"event_type":"USER_LOGIN","source":"web-client","payload":{}})
         assert response.status_code == 422
     finally:
         app.dependency_overrides = {}

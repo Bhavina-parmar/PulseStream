@@ -9,7 +9,6 @@ from config.settings import settings
 from kafka.topics import USER_EVENTS_TOPIC, DLQ_TOPIC
 from kafka.producer import publish_event
 from repositories import event_repository, analytics_repository
-from websocket import ws_manager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("EventWorker")
@@ -54,14 +53,16 @@ async def process_event(msg):
                 )
                 logger.info(f"Database sync success: Event {event_id} status updated to PROCESSED.")
 
-                new_count = await asyncio.to_thread(analytics_repository.increment_counter, event_type)
+                new_count = await analytics_repository.increment_counter(event_type)
 
                 broadcast_payload={
                     "event_type":event_type,
                     "current_count":new_count,
                     "processed_at":datetime.now(timezone.utc).isoformat()
                 }
-                await ws_manager.broadcast(broadcast_payload)
+                import json as _json
+                from config.redis import redis_client
+                await redis_client.publish("ws:events", _json.dumps(broadcast_payload))
 
                 EVENTS_PROCESSED_TOTAL.labels(event_type=event_type).inc()
 

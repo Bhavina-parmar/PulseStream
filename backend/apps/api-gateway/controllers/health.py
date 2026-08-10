@@ -36,7 +36,7 @@ async def read_health(response: Response):
             db.close()
 
     try:
-        redis_client.ping()
+        await redis_client.ping()
     except Exception as redis_err:
         logger.error(f"Health check failed for Redis: {redis_err}")
         services["redis"] = "unhealthy"

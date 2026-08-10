@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column,Integer, String, JSON, DateTime
 from config.database import Base
 
@@ -11,5 +11,5 @@ class Event(Base):
     source=Column(String, nullable=False)
     payload=Column(JSON, nullable=False)
     status= Column(String, default="PENDING",nullable=False)
-    created_at=Column(DateTime,default=datetime.utcnow,nullable=False)
+    created_at=Column(DateTime,default=lambda:datetime.now(timezone.utc),nullable=False)
     processed_at=Column(DateTime ,nullable=True)

@@ -1,9 +1,13 @@
 import logging
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from repositories import event_repository
 from kafka.producer import publish_event
 from kafka.topics import USER_EVENTS_TOPIC
 from dto.event_dto import EventResponseDTO
+from typing import List, Optional
+from models.event import Event
+
 
 logger=logging.getLogger(__name__)
 
@@ -27,3 +31,6 @@ async def create_and_publish_event(db: Session, user_id: int, event_type: str, s
             f"Reason: {str(kafka_error)}"
         )
     return db_event
+
+def get_event(db: AsyncSession,skip: int=0,limit: int=10,event_type: Optional[str]=None)-> List[Event]:
+    return event_repository.get_events(db=db,skip=skip,limit=limit,event_type=event_type)

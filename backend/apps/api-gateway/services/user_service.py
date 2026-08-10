@@ -1,5 +1,7 @@
+from typing import List
 from sqlalchemy.orm import Session
-from repositories.user_repository import create_user, get_user_by_id,get_user_by_email
+from models.user import User
+from repositories.user_repository import create_user, get_user_by_id, get_user_by_email, get_all_users as fetch_all_users
 from middlewares.auth import hash_password
 import logging 
 
@@ -17,5 +19,9 @@ def register_user(db: Session, email: str, plain_password: str):
 
 def get_user(db:Session,user_id:int):
     return get_user_by_id(db=db,user_id=user_id)
+
+def get_all_users(db: Session) -> List[User]:
+    return fetch_all_users(db=db)
+
 
    

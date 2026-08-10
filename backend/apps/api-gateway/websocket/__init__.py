@@ -1,3 +1,1 @@
-from websocket.manager import ConnectionManager
-
-ws_manager = ConnectionManager()
+from websocket.manager import ws_manager, redis_subscriber

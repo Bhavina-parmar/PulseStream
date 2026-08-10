@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
+from typing import List,Optional
+from fastapi import Query
 from dto.event_dto import EventCreateDTO,EventResponseDTO
 from services import event_service
 from config.database import get_db
@@ -28,3 +30,18 @@ async def create_event(
         payload=event_in.payload
     )
     return event
+
+
+@router.get("/",response_model=List[EventResponseDTO])
+def list_event(
+    skip: int= Query(default=0,ge=0),
+    limit: int=Query(default=10,ge=1,le=100),
+    event_type: Optional[str] = Query(default=None),
+    db: AsyncSession = Depends(get_db)
+):
+    return event_service.get_event(
+        db=db,
+        skip=skip,
+        limit=limit,
+        event_type=event_type
+    )

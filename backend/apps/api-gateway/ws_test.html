@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PulseStream Live Events</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 { font-size: 1.6rem; margin-bottom: 6px; color: #7c3aed; }
+    p.subtitle { font-size: 0.85rem; color: #64748b; margin-bottom: 32px; }
+
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 520px;
+      margin-bottom: 20px;
+    }
+
+    .card label {
+      display: block;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .card input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+      outline: none;
+    }
+
+    .card input:focus { border-color: #7c3aed; }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #loginBtn { background: #7c3aed; color: #fff; }
+    #connectBtn { background: #0ea5e9; color: #fff; }
+    #disconnectBtn { background: #ef4444; color: #fff; display: none; }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+    }
+
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      flex-shrink: 0;
+    }
+    .dot.connected { background: #22c55e; animation: pulse 1.5s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    #eventFeed {
+      list-style: none;
+      max-height: 340px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #eventFeed li {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: slideIn 0.2s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .event-type {
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .PURCHASE    { background: #14532d; color: #4ade80; }
+    .PAGE_VIEW   { background: #1e3a5f; color: #60a5fa; }
+    .USER_LOGIN  { background: #3b1f5e; color: #c084fc; }
+    .DEFAULT     { background: #292524; color: #d6d3d1; }
+
+    .event-meta { color: #64748b; font-size: 0.75rem; }
+    .event-count { color: #f59e0b; font-weight: 600; font-size: 0.8rem; }
+
+    #tokenDisplay {
+      font-size: 0.7rem;
+      color: #4ade80;
+      word-break: break-all;
+      margin-top: 8px;
+      display: none;
+    }
+
+    #errorMsg {
+      color: #f87171;
+      font-size: 0.8rem;
+      margin-top: 8px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ PulseStream</h1>
+  <p class="subtitle">Live event stream via WebSocket</p>
+
+  <!-- Login -->
+  <div class="card">
+    <label>Email</label>
+    <input id="email" type="email" value="test@example.com" />
+    <label>Password</label>
+    <input id="password" type="password" value="TestPassword123!" />
+    <button id="loginBtn" onclick="login()">Login &amp; Get Token</button>
+    <div id="tokenDisplay"></div>
+    <div id="errorMsg"></div>
+  </div>
+
+  <!-- WebSocket -->
+  <div class="card">
+    <div class="status-row">
+      <div class="dot" id="dot"></div>
+      <span id="statusText">Disconnected</span>
+    </div>
+    <button id="connectBtn" onclick="connectWS()" disabled>Connect</button>
+    <button id="disconnectBtn" onclick="disconnectWS()">Disconnect</button>
+  </div>
+
+  <!-- Feed -->
+  <div class="card">
+    <ul id="eventFeed"></ul>
+  </div>
+
+<script>
+  const API = "http://localhost:8000";
+  let socket = null;
+  let token = localStorage.getItem("ps_token") || null;
+
+  if (token) {
+    document.getElementById("connectBtn").disabled = false;
+    document.getElementById("tokenDisplay").textContent = "Token: " + token.slice(0, 40) + "...";
+    document.getElementById("tokenDisplay").style.display = "block";
+  }
+
+  async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const errEl = document.getElementById("errorMsg");
+    const tokenEl = document.getElementById("tokenDisplay");
+
+    errEl.style.display = "none";
+    tokenEl.style.display = "none";
+
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ username: email, password })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Login failed");
+      }
+
+      const data = await res.json();
+      token = data.access_token;
+      localStorage.setItem("ps_token", token);
+
+      tokenEl.textContent = "Token: " + token.slice(0, 40) + "...";
+      tokenEl.style.display = "block";
+      document.getElementById("connectBtn").disabled = false;
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.style.display = "block";
+    }
+  }
+
+  function connectWS() {
+    if (!token) return;
+
+    socket = new WebSocket(`ws://localhost:8000/ws?token=${token}`);
+
+    socket.onopen = () => setStatus(true);
+
+    socket.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      addEvent(msg);
+    };
+
+    socket.onclose = (e) => {
+      setStatus(false);
+      if (e.code === 4001) showError("Connection rejected: invalid token.");
+    };
+
+    socket.onerror = () => showError("WebSocket error.");
+  }
+
+  function disconnectWS() {
+    if (socket) socket.close();
+  }
+
+  function setStatus(connected) {
+    document.getElementById("dot").className = "dot" + (connected ? " connected" : "");
+    document.getElementById("statusText").textContent = connected ? "Connected" : "Disconnected";
+    document.getElementById("connectBtn").style.display = connected ? "none" : "block";
+    document.getElementById("disconnectBtn").style.display = connected ? "block" : "none";
+  }
+
+  function addEvent(msg) {
+    const feed = document.getElementById("eventFeed");
+    const li = document.createElement("li");
+    const type = msg.event_type || "UNKNOWN";
+    const count = msg.current_count ?? "-";
+    const time = msg.processed_at ? new Date(msg.processed_at).toLocaleTimeString() : "";
+    const cls = ["PURCHASE", "PAGE_VIEW", "USER_LOGIN"].includes(type) ? type : "DEFAULT";
+
+    li.innerHTML = `
+      <span class="event-type ${cls}">${type}</span>
+      <span class="event-meta">${time}</span>
+      <span class="event-count">×${count}</span>
+    `;
+    feed.prepend(li);
+
+    // cap feed at 50 items
+    while (feed.children.length > 50) feed.removeChild(feed.lastChild);
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("errorMsg");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+</script>
+</body>
+</html>

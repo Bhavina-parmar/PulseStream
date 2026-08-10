@@ -1,3 +1,5 @@
+from typing import List
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from models.user import User
 
@@ -13,3 +15,8 @@ def get_user_by_id(db:Session,user_id:int)->User:
 
 def get_user_by_email(db:Session,user_email:str)->User:
     return db.query(User).filter(User.email==user_email).first()
+
+def get_all_users(db: Session)->List[User]:
+    statement = select(User)
+    return list(db.scalars(statement).all())
+
