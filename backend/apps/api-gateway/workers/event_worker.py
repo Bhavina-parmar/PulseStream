@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import signal
 from datetime import datetime, timezone
 from aiokafka import AIOKafkaConsumer
 from prometheus_client import Counter,start_http_server
@@ -23,6 +24,14 @@ EVENTS_FAILED_TOTAL=Counter(
     "Total number of kafka events that exhausted retries and moves to DLQ.",
     ["event_type"]
 )
+
+shutdown = False
+
+def handle_shutdown(signum, frame):
+    global shutdown
+    shutdown = True
+signal.signal(signal.SIGTERM, handle_shutdown)
+signal.signal(signal.SIGINT, handle_shutdown)
 
 async def process_event(msg):
     db=SessionLocal()
@@ -124,6 +133,8 @@ async def run_consumer():
     logger.info(f"Worker connected! Listening continuously on topic '{USER_EVENTS_TOPIC}'....")
     try:
         async for msg in consumer:
+            if shutdown:
+                break
             await process_event(msg)
     except Exception as loop_error:
         logger.error(f"Exception encountered in consumer engine: {loop_error}")
