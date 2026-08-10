@@ -37,7 +37,7 @@ def list_event(
     skip: int= Query(default=0,ge=0),
     limit: int=Query(default=10,ge=1,le=100),
     event_type: Optional[str] = Query(default=None),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     return event_service.get_event(
         db=db,
