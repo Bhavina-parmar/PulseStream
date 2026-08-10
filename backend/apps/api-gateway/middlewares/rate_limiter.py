@@ -4,13 +4,13 @@ from config.redis import redis_client
 from config.logger import logger 
 
 RATE_LIMIT_WINDOW=60
-MAX_REQUESTS= 60
+MAX_REQUESTS= 1000
 
 async def rate_limit_middleware(request:Request,call_next):
     if request.url.path == "/ws" or request.headers.get("upgrade") == "websocket":
         return await call_next(request)
 
-    client_ip=request.client.host
+    client_ip = request.headers.get("X-Forwarded-For", request.client.host)
     redis_key= f"rate_limit:{client_ip}"
 
     try:
