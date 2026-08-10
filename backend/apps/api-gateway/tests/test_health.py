@@ -1,6 +1,6 @@
 import pytest 
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, AsyncMock
 from main import app
 
 client = TestClient(app)
@@ -9,10 +9,10 @@ client = TestClient(app)
 @patch("controllers.health.redis_client")
 @patch("controllers.health.SessionLocal")
 def test_health_all_healthy(mock_db_session, mock_redis, mock_kafka_producer):
-    mock_db = MagicMock()
+    mock_db = AsyncMock()
     mock_db_session.return_value = mock_db
 
-    mock_redis.ping = MagicMock(return_value=True)
+    mock_redis.ping = AsyncMock(return_value=True)
 
     mock_producer_instance = AsyncMock()
     mock_kafka_producer.return_value = mock_producer_instance
@@ -38,7 +38,7 @@ def test_health_all_healthy(mock_db_session, mock_redis, mock_kafka_producer):
 def test_health_postgres_down(mock_db_session, mock_redis, mock_kafka_producer):
     mock_db_session.side_effect = Exception("DB Connection Refused")
 
-    mock_redis.ping = MagicMock(return_value=True)
+    mock_redis.ping = AsyncMock(return_value=True)
     mock_kafka_producer.return_value = AsyncMock()
 
     response = client.get("/health")
@@ -56,9 +56,9 @@ def test_health_postgres_down(mock_db_session, mock_redis, mock_kafka_producer):
 @patch("controllers.health.SessionLocal")
 
 def test_health_redis_down(mock_db_session, mock_redis, mock_kafka_producer):
-    mock_db_session.return_value = MagicMock()
+    mock_db_session.return_value = AsyncMock()
 
-    mock_redis.ping = MagicMock(side_effect=Exception("Redis connection timed out"))
+    mock_redis.ping = AsyncMock(side_effect=Exception("Redis connection timed out"))
 
     mock_kafka_producer.return_value = AsyncMock()
 
@@ -75,8 +75,8 @@ def test_health_redis_down(mock_db_session, mock_redis, mock_kafka_producer):
 @patch("controllers.health.redis_client")
 @patch("controllers.health.SessionLocal")
 def test_health_kafka_down(mock_db_session, mock_redis, mock_kafka_producer):
-    mock_db_session.return_value = MagicMock()
-    mock_redis.ping = MagicMock(return_value=True)
+    mock_db_session.return_value = AsyncMock()
+    mock_redis.ping = AsyncMock(return_value=True)
 
     mock_producer_instance = AsyncMock()
     mock_producer_instance.start.side_effect = Exception("Kafka Broker Unavailable")

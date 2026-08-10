@@ -62,7 +62,7 @@ def test_get_user_success(mock_get_user):
 
 @patch("controllers.user_controller.get_user")
 def test_get_user_not_found(mock_get_user):
-    app.dependency_overrides[get_current_user] = lambda : {"sub":"99"}
+    app.dependency_overrides[get_current_user] = lambda : {"sub":"99","role":"admin"}
 
     mock_get_user.return_value =None
 

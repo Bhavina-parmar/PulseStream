@@ -1,6 +1,7 @@
 import pytest
 from jose import jwt
 from fastapi import HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials
 from config.settings import settings
 from middlewares.auth import (
     hash_password,
@@ -41,7 +42,8 @@ async def test_get_current_user_valid_token():
     payload_data = {"sub":"42"}
     token = create_access_token(data=payload_data)
 
-    user_payload =  await get_current_user(token=token)
+    credentials = HTTPAuthorizationCredentials(scheme="bearer", credentials=token)
+    user_payload = await get_current_user(credentials=credentials)
 
     assert user_payload is not None
     assert user_payload["sub"] == "42"
@@ -51,8 +53,10 @@ async def test_get_current_user_valid_token():
 async def test_get_current_user_invalid_token():
     garbage_token = "invalid.token.payload.signature.here"
 
+    credentials = HTTPAuthorizationCredentials(scheme="bearer", credentials=garbage_token)
+
     with pytest.raises(HTTPException) as exc_info:
-        await get_current_user(token=garbage_token)
+        await get_current_user(credentials=credentials)
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_require_role_success():
