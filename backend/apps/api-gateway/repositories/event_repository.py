@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from models.event import Event
@@ -30,3 +30,13 @@ def get_events(db: Session, skip: int=0,limit: int=10, event_type: Optional[str]
     if event_type:
         statement = statement.where(Event.event_type==event_type)
     return list(db.scalars(statement.offset(skip).limit(limit)).all())
+
+
+def get_pending_event(db: Session, threshold_second: int=60)->List[Event]:
+    cutoff_time = datetime.now(timezone.utc) - timedelta(seconds=threshold_second)
+    statement = (
+        select(Event)
+        .where(Event.status == "PENDING")
+        .where(Event.created_at<=cutoff_time)
+    )
+    return list(db.scalars(statement).all())

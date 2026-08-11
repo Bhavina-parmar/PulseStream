@@ -151,5 +151,18 @@ services:
       - app-network
     depends_on:
       - prometheus
-
+  
+  recovery-worker:
+    build: .
+    command: python -m workers.recovery_worker
+    environment:
+      - DATABASE_URL=postgresql://pulse_user:pulse_pass@db:5432/pulsestream
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - LOG_LEVEL=INFO
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - kafka
+    restart: always
   
