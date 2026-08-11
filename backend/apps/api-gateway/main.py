@@ -17,6 +17,7 @@ from config.logger import setup_logging, logger
 from config.database import SessionLocal
 from services.auth_service import cleanup_expired_tokens
 from websocket import redis_subscriber
+from sqlalchemy.exc import OperationalError
 
 setup_logging()
 logger.info("Application starting up...")
@@ -85,6 +86,15 @@ v1_router.include_router(event_router)
 v1_router.include_router(analytics_router)
 
 app.include_router(v1_router)
+
+@app.exception_handler(OperationalError)
+async def db_exception_handler(request: Request, exc: OperationalError):
+    logger.error(f"Database connection error: {str(exc)}")
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"status": "error", "message": "Database unavailable, please try again later"}
+    )
+
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
